@@ -18,16 +18,12 @@ public class CompanyViewController {
         this.companyService = companyService;
     }
 
-    // List all companies (Admin page)
-    @GetMapping("/admin")
-    public String listCompanies(Model model) {
-        model.addAttribute("companies", companyService.getAllCompanies());
-        return "companies"; // Render companies.html
-    }
-
     // Show the "Create New Company" page
     @GetMapping("/new")
-    public String createCompanyForm(Model model) {
+    public String createCompanyForm(@RequestParam(value = "success", required = false) String success, Model model) {
+        if ("true".equals(success)) {
+            model.addAttribute("successMessage", "Company added successfully!");
+        }
         model.addAttribute("company", new Company());
         return "create_company"; // Render create_company.html
     }
@@ -37,50 +33,17 @@ public class CompanyViewController {
     public String saveCompany(@Valid @ModelAttribute("company") Company company,
                               BindingResult result, Model model) {
         if (result.hasErrors()) {
-            return "create_company"; // Reload the form with validation errors
+            return "create_company"; // Stay on the form page
         }
 
         companyService.saveCompany(company); // Save the company
-        model.addAttribute("successMessage", "Company added successfully!");
-        model.addAttribute("company", new Company()); // Reset the form
-        return "create_company";
+        return "redirect:/companies/new?success=true"; // Redirect to avoid duplicate submissions
     }
 
-    // Show the "Edit Company" page
-    @GetMapping("/edit/{id}")
-    public String editCompanyForm(@PathVariable Long id, Model model) {
-        try {
-            Company company = companyService.getCompanyById(id);
-            model.addAttribute("company", company);
-            return "edit_company"; // Render edit_company.html
-        } catch (RuntimeException e) {
-            model.addAttribute("errorMessage", "Company not found!");
-            return "redirect:/companies/admin"; // Redirect to the list page
-        }
-    }
-
-    // Process the company update
-    @PostMapping("/{id}")
-    public String updateCompany(@PathVariable Long id, @Valid @ModelAttribute("company") Company company,
-                                BindingResult result, Model model) {
-        if (result.hasErrors()) {
-            return "edit_company"; // Reload the form with validation errors
-        }
-
-        company.setId(id);
-        companyService.saveCompany(company); // Save the updated company
-        return "redirect:/companies/admin"; // Redirect to the list page
-    }
-
-    // Delete a company by ID
-    @GetMapping("/delete/{id}")
-    public String deleteCompany(@PathVariable Long id, Model model) {
-        try {
-            companyService.deleteCompany(id);
-            return "redirect:/companies/admin"; // Redirect to the list page
-        } catch (RuntimeException e) {
-            model.addAttribute("errorMessage", "Company not found!");
-            return "redirect:/companies/admin";
-        }
+    // List all companies (Admin page)
+    @GetMapping("/admin")
+    public String listCompanies(Model model) {
+        model.addAttribute("companies", companyService.getAllCompanies()); // Fetch companies from the service
+        return "companies"; // Render companies.html
     }
 }
